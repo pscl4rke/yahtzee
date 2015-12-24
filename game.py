@@ -10,6 +10,22 @@ class UserInputException(Exception):
     pass
 
 
+class RerollCommand:
+
+    def __init__(self, d1, d2, d3, d4, d5):
+        self.d1 = d1
+        self.d2 = d2
+        self.d3 = d3
+        self.d4 = d4
+        self.d5 = d5
+
+
+class UseCommand:
+
+    def __init__(self, row):
+        self.row = row
+
+
 class Game:
 
     def __init__(self):
@@ -17,16 +33,25 @@ class Game:
         self.hand = dice.Hand()
         self.need_card_printed = True
 
-    def play_reroll(self, d1, d2, d3, d4, d5):
-        self.hand.reroll(d1, d2, d3, d4, d5)
+    def play_reroll(self, cmd):
+        self.hand.reroll(cmd.d1, cmd.d2, cmd.d3, cmd.d4, cmd.d5)
 
-    def play_use(self, row_id):
+    def play_use(self, command):
+        row_id = command.row.id
         for row in self.card.rows:
             if row.id == row_id:
                 row.use(self.hand)
 
     def play_command(self, command):
-        args = command.split()
+        if isinstance(command, RerollCommand):
+            self.play_reroll(command)
+        elif isinstance(command, UseCommand):
+            self.play_use(command)
+        else:
+            raise NotImplementedError(repr(command))
+
+    def play_command_line(self, command_line):
+        args = command_line.split()
         if len(args) < 1:
             raise UserInputException("Invalid Command")
         if args[0] == "roll":
@@ -45,14 +70,16 @@ class Game:
             if True not in to_reroll:
                 raise UserInputException("Must reroll something")
             try:
-                self.play_reroll(*to_reroll)
+                command = RerollCommand(*to_reroll)
+                self.play_reroll(command)
             except dice.NoMoreRollsException:
                 raise UserInputException("No more rolls left")
             return
         for row in self.card.rows:
             if args[0] == row.id:
                 try:
-                    row.use(self.hand)
+                    command = UseCommand(row)
+                    self.play_use(command)
                 except card.RowAlreadyUsedException:
                     raise UserInputException("That row is already used")
                 self.hand = dice.Hand()
@@ -82,8 +109,8 @@ class Game:
             try:
                 if self.need_card_printed:
                     self.print_state(outfile)
-                command = raw_input("%s Your move? " % self.hand)
-                self.play_command(command)
+                command_line = raw_input("%s Your move? " % self.hand)
+                self.play_command_line(command_line)
             except UserInputException as exc:
                 outfile.write("Oops! %s\n" % exc)
         self.print_state(outfile)
