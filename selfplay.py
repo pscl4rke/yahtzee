@@ -62,7 +62,7 @@ class GrabMaxPlayer(BasePlayer):
         return game.UseCommand(self.best_scoring_row(card, hand).id)
 
 
-class RollThenGrab(BasePlayer):
+class RollThenGrabPlayer(BasePlayer):
 
     def decide_next_move(self, card, hand):
         if hand.has_rolls_left():
@@ -75,7 +75,7 @@ def main():
     players_to_try = [
         RandomPlayer,
         GrabMaxPlayer,
-        RollThenGrab,
+        RollThenGrabPlayer,
     ]
     for player_class in players_to_try:
         runner = Runner(player_class)
