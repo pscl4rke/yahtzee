@@ -22,6 +22,16 @@ class RerollCommand:
         self.d5 = d5
 
 
+class RerollNotCommand(RerollCommand):
+
+    def __init__(self, face, hand):
+        self.d1 = int(hand.d1) != face
+        self.d2 = int(hand.d2) != face
+        self.d3 = int(hand.d3) != face
+        self.d4 = int(hand.d4) != face
+        self.d5 = int(hand.d5) != face
+
+
 class UseCommand:
 
     def __init__(self, row_id):
@@ -80,10 +90,15 @@ class InteractivePlayer:
         print "---------------"
         self.need_card_printed = False
 
-    def parse_command_line(self, command_line, card):
+    def parse_command_line(self, command_line, card, hand):
         args = command_line.split()
         if len(args) < 1:
             raise UserInputException("Invalid Command")
+        if args[0] == "rollnot":
+            if len(args) != 2:
+                raise UserInputException("One argument required")
+            want_to_keep = int(args[1])
+            return RerollNotCommand(want_to_keep, hand)
         if args[0] == "roll":
             requested = args[1:]
             to_reroll = [False, False, False, False, False]
@@ -110,7 +125,7 @@ class InteractivePlayer:
             if self.need_card_printed:
                 self.print_card(card)
             command_line = raw_input("%s Your move? " % hand)
-            command = self.parse_command_line(command_line, card)
+            command = self.parse_command_line(command_line, card, hand)
             if isinstance(command, UseCommand):
                 self.need_card_printed = True
             return command
