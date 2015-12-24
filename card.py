@@ -160,4 +160,9 @@ class Card:
     def available_rows(self):
         return [row for row in self.rows if row.can_be_used()]
 
+    def row_by_id(self, row_id):
+        for row in self.rows:
+            if row.id == row_id:
+                return row
+
 
