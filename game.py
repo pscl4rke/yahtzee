@@ -71,7 +71,7 @@ class InteractivePlayer:
     def __init__(self):
         self.need_card_printed = True
 
-    def print_state(self, card):
+    def print_card(self, card):
         print
         for row in card.rows:
             print "%s" % row.printable_line()
@@ -108,7 +108,7 @@ class InteractivePlayer:
     def decide_next_move(self, card, hand):
         try:
             if self.need_card_printed:
-                self.print_state(card)
+                self.print_card(card)
             command_line = raw_input("%s Your move? " % hand)
             command = self.parse_command_line(command_line, card)
             if isinstance(command, UseCommand):
@@ -119,7 +119,7 @@ class InteractivePlayer:
             return NoopCommand()
 
     def finished(self, card):
-        self.print_state()
+        self.print_card(card)
         print "Game over! You scored %i" % card.total()
 
 
