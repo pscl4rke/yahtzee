@@ -1,12 +1,14 @@
 
 
-import sys
-
 import card
 import dice
 
 
 class UserInputException(Exception):
+    pass
+
+
+class NoopCommand:
     pass
 
 
@@ -31,7 +33,6 @@ class Game:
     def __init__(self):
         self.card = card.Card()
         self.hand = dice.Hand()
-        self.need_card_printed = True
 
     def play_reroll(self, cmd):
         try:
@@ -45,7 +46,6 @@ class Game:
                 if row.id == command.row_id:
                     row.use(self.hand)
                     self.hand = dice.Hand()
-                    self.need_card_printed = True
         except card.RowAlreadyUsedException:
             raise UserInputException("That row is already used")
 
@@ -54,11 +54,33 @@ class Game:
             self.play_reroll(command)
         elif isinstance(command, UseCommand):
             self.play_use(command)
+        elif isinstance(command, NoopCommand):
+            pass
         else:
             raise NotImplementedError(repr(command))
 
-    def play_command_line(self, command_line):
-        command = None
+    def play(self, player):
+        while self.card.has_rows_left():
+            command = player.decide_next_move(self.card, self.hand)
+            self.play_command(command)
+        player.finished(self.card)
+
+
+class InteractivePlayer:
+
+    def __init__(self):
+        self.need_card_printed = True
+
+    def print_state(self, card):
+        print
+        for row in card.rows:
+            print "%s" % row.printable_line()
+        print "---------------"
+        print "    Total: %3i" % card.total()
+        print "---------------"
+        self.need_card_printed = False
+
+    def parse_command_line(self, command_line, card):
         args = command_line.split()
         if len(args) < 1:
             raise UserInputException("Invalid Command")
@@ -77,48 +99,35 @@ class Game:
                 to_reroll[4] = True
             if True not in to_reroll:
                 raise UserInputException("Must reroll something")
-            command = RerollCommand(*to_reroll)
-        for row in self.card.rows:
+            return RerollCommand(*to_reroll)
+        for row in card.rows:
             if args[0] == row.id:
-                command = UseCommand(row.id)
-        if command is None:
-            raise UserInputException("Invalid Command")
-        self.play_command(command)
+                return UseCommand(row.id)
+        raise UserInputException("Invalid Command: %s" % args[0])
 
-    def print_state(self, outfile):
-        outfile.write("\n")
-        for row in self.card.rows:
-            #if row.hand is None:
-            #    outfile.write("%10s   -\n" % row.id)
-            #else:
-            #    outfile.write("%10s  %2i\n" % (row.id, row.total()))
-            outfile.write("%s\n" % row.printable_line())
-        outfile.write("---------------\n")
-        outfile.write("    Total: %3i\n" % self.card.total())
-        outfile.write("---------------\n")
-        #outfile.write("a[%i] b[%i] c[%i] d[%i] e[%i]\n" %
-        #    (self.hand.d1, self.hand.d2, self.hand.d3, self.hand.d4, self.hand.d5))
-        #outfile.write("You have %i rolls left\n" % self.hand.rerolls_left)
-        self.need_card_printed = False
+    def decide_next_move(self, card, hand):
+        try:
+            if self.need_card_printed:
+                self.print_state(card)
+            command_line = raw_input("%s Your move? " % hand)
+            command = self.parse_command_line(command_line, card)
+            if isinstance(command, UseCommand):
+                self.need_card_printed = True
+            return command
+        except UserInputException as exc:
+            print "Oops! %s" % exc
+            return NoopCommand()
 
-    def play(self):
-        outfile = sys.stdout
-        while self.card.has_rows_left():
-            try:
-                if self.need_card_printed:
-                    self.print_state(outfile)
-                command_line = raw_input("%s Your move? " % self.hand)
-                self.play_command_line(command_line)
-            except UserInputException as exc:
-                outfile.write("Oops! %s\n" % exc)
-        self.print_state(outfile)
-        outfile.write("Game over! You scored %i\n" % self.card.total())
+    def finished(self, card):
+        self.print_state()
+        print "Game over! You scored %i" % card.total()
 
 
 def main():
     import readline  # magically takes effect
     g = Game()
-    g.play()
+    p = InteractivePlayer()
+    g.play(p)
 
 
 if __name__ == '__main__':
