@@ -45,10 +45,29 @@ class RandomPlayer:
         pass
 
 
+class GrabMaxPlayer:
+
+    def decide_next_move(self, card, hand):
+        possibilities = [
+            (row.scorer.score(hand), row)
+            for row in card.available_rows() ]
+        possibilities.sort()
+        best_scoring_row = possibilities[-1][1]
+        return game.UseCommand(best_scoring_row.id)
+
+    def finished(self, card):
+        pass
+
+
 def main():
-    runner = Runner(RandomPlayer)
-    stats = runner.play_a_lot(10000)
-    print "The average score was %i" % stats.average()
+    players_to_try = [
+        RandomPlayer,
+        GrabMaxPlayer,
+    ]
+    for player_class in players_to_try:
+        runner = Runner(player_class)
+        stats = runner.play_a_lot(10000)
+        print "%s: The average score was %i" % (player_class.__name__, stats.average())
 
 
 if __name__ == '__main__':
