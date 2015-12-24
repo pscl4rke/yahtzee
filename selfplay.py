@@ -40,6 +40,14 @@ class BasePlayer:
         pass
 
 
+    def best_scoring_row(self, card, hand):
+        possibilities = [
+            (row.scorer.score(hand), row)
+            for row in card.available_rows() ]
+        possibilities.sort()
+        return possibilities[-1][1]
+
+
 class RandomPlayer(BasePlayer):
 
     def decide_next_move(self, card, hand):
@@ -51,12 +59,7 @@ class RandomPlayer(BasePlayer):
 class GrabMaxPlayer(BasePlayer):
 
     def decide_next_move(self, card, hand):
-        possibilities = [
-            (row.scorer.score(hand), row)
-            for row in card.available_rows() ]
-        possibilities.sort()
-        best_scoring_row = possibilities[-1][1]
-        return game.UseCommand(best_scoring_row.id)
+        return game.UseCommand(self.best_scoring_row(card, hand).id)
 
 
 class RollThenGrab(BasePlayer):
@@ -65,12 +68,7 @@ class RollThenGrab(BasePlayer):
         if hand.has_rolls_left():
             return game.RerollNotCommand(hand.most_popular_faces()[0], hand)
         else:
-            possibilities = [
-                (row.scorer.score(hand), row)
-                for row in card.available_rows() ]
-            possibilities.sort()
-            best_scoring_row = possibilities[-1][1]
-            return game.UseCommand(best_scoring_row.id)
+            return game.UseCommand(self.best_scoring_row(card, hand).id)
 
 
 def main():
