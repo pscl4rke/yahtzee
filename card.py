@@ -157,4 +157,7 @@ class Card:
     def has_rows_left(self):
         return any(row.can_be_used() for row in self.rows)
 
+    def available_rows(self):
+        return [row for row in self.rows if row.can_be_used()]
+
 
