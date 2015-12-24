@@ -74,4 +74,13 @@ class Hand:
             groups[count].append(face)
         return groups
 
+    def has_rolls_left(self):
+        return self.rerolls_left > 0
+
+    def most_popular_faces(self):
+        groups = self.grouped_by_count()
+        for count in reversed(sorted(groups.keys())):
+            if groups[count] != []:
+                return groups[count]
+
 
