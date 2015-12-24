@@ -22,8 +22,8 @@ class RerollCommand:
 
 class UseCommand:
 
-    def __init__(self, row):
-        self.row = row
+    def __init__(self, row_id):
+        self.row_id = row_id
 
 
 class Game:
@@ -34,13 +34,20 @@ class Game:
         self.need_card_printed = True
 
     def play_reroll(self, cmd):
-        self.hand.reroll(cmd.d1, cmd.d2, cmd.d3, cmd.d4, cmd.d5)
+        try:
+            self.hand.reroll(cmd.d1, cmd.d2, cmd.d3, cmd.d4, cmd.d5)
+        except dice.NoMoreRollsException:
+            raise UserInputException("No more rolls left")
 
     def play_use(self, command):
-        row_id = command.row.id
-        for row in self.card.rows:
-            if row.id == row_id:
-                row.use(self.hand)
+        try:
+            for row in self.card.rows:
+                if row.id == command.row_id:
+                    row.use(self.hand)
+                    self.hand = dice.Hand()
+                    self.need_card_printed = True
+        except card.RowAlreadyUsedException:
+            raise UserInputException("That row is already used")
 
     def play_command(self, command):
         if isinstance(command, RerollCommand):
@@ -51,6 +58,7 @@ class Game:
             raise NotImplementedError(repr(command))
 
     def play_command_line(self, command_line):
+        command = None
         args = command_line.split()
         if len(args) < 1:
             raise UserInputException("Invalid Command")
@@ -69,23 +77,13 @@ class Game:
                 to_reroll[4] = True
             if True not in to_reroll:
                 raise UserInputException("Must reroll something")
-            try:
-                command = RerollCommand(*to_reroll)
-                self.play_reroll(command)
-            except dice.NoMoreRollsException:
-                raise UserInputException("No more rolls left")
-            return
+            command = RerollCommand(*to_reroll)
         for row in self.card.rows:
             if args[0] == row.id:
-                try:
-                    command = UseCommand(row)
-                    self.play_use(command)
-                except card.RowAlreadyUsedException:
-                    raise UserInputException("That row is already used")
-                self.hand = dice.Hand()
-                self.need_card_printed = True
-                return
-        raise UserInputException("Invalid Command")
+                command = UseCommand(row.id)
+        if command is None:
+            raise UserInputException("Invalid Command")
+        self.play_command(command)
 
     def print_state(self, outfile):
         outfile.write("\n")
