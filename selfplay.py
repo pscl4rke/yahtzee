@@ -34,18 +34,21 @@ class Runner:
         return stats
 
 
-class RandomPlayer:
+class BasePlayer:
+
+    def finished(self, card):
+        pass
+
+
+class RandomPlayer(BasePlayer):
 
     def decide_next_move(self, card, hand):
         possibilities = list(card.available_rows())
         random.shuffle(possibilities)
         return game.UseCommand(possibilities[0].id)
 
-    def finished(self, card):
-        pass
 
-
-class GrabMaxPlayer:
+class GrabMaxPlayer(BasePlayer):
 
     def decide_next_move(self, card, hand):
         possibilities = [
@@ -54,9 +57,6 @@ class GrabMaxPlayer:
         possibilities.sort()
         best_scoring_row = possibilities[-1][1]
         return game.UseCommand(best_scoring_row.id)
-
-    def finished(self, card):
-        pass
 
 
 def main():
