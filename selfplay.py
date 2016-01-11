@@ -36,6 +36,9 @@ class Runner:
 
 class BasePlayer:
 
+    def handle_user_input_error(self, exc):
+        raise exc
+
     def finished(self, card):
         pass
 

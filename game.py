@@ -71,8 +71,11 @@ class Game:
 
     def play(self, player):
         while self.card.has_rows_left():
-            command = player.decide_next_move(self.card, self.hand)
-            self.play_command(command)
+            try:
+                command = player.decide_next_move(self.card, self.hand)
+                self.play_command(command)
+            except UserInputException as exc:
+                player.handle_user_input_error(exc)
         player.finished(self.card)
 
 
@@ -121,17 +124,16 @@ class InteractivePlayer:
         raise UserInputException("Invalid Command: %s" % args[0])
 
     def decide_next_move(self, card, hand):
-        try:
-            if self.need_card_printed:
-                self.print_card(card)
-            command_line = raw_input("%s Your move? " % hand)
-            command = self.parse_command_line(command_line, card, hand)
-            if isinstance(command, UseCommand):
-                self.need_card_printed = True
-            return command
-        except UserInputException as exc:
-            print "Oops! %s" % exc
-            return NoopCommand()
+        if self.need_card_printed:
+            self.print_card(card)
+        command_line = raw_input("%s Your move? " % hand)
+        command = self.parse_command_line(command_line, card, hand)
+        if isinstance(command, UseCommand):
+            self.need_card_printed = True
+        return command
+
+    def handle_user_input_error(self, exc):
+        print "Oops! %s" % exc
 
     def finished(self, card):
         self.print_card(card)
